@@ -1,60 +1,43 @@
 //
-//  JokeService.swift
+//  NetworkService.swift
 //  ChuckNorrisJoke
 //
 //  Created by netlanc on 17.02.2024.
 //
 
-import UIKit
-import RealmSwift
+import Foundation
 
-
-class JokeService {
-    static let shared = JokeService() // Singleton
+class NetworkService {
+    static let shared = NetworkService()
+    private let baseURL = URL(string: "https://api.chucknorris.io/jokes/random")!
     
     private init() {}
     
-    // Загрузка случайной шутки с API Chuck Norris
-    func loadRandomJoke(completion: @escaping (Joke?, Error?) -> Void) {
-        guard let url = URL(string: "https://api.chucknorris.io/jokes/random") else {
-            completion(nil, NSError(domain: "Invalid URL", code: -1, userInfo: nil))
-            return
-        }
+    func loadRandomJoke(completion: @escaping (JokeResponse?, Error?) -> Void) {
+        let url = baseURL
         
         URLSession.shared.dataTask(with: url) { data, response, error in
-            guard let data = data else {
+            if let error = error {
                 completion(nil, error)
                 return
             }
             
+            guard let data = data else {
+                completion(nil, NSError(domain: "А пусто", code: -1, userInfo: nil))
+                return
+            }
+            
             do {
-                let decoder = JSONDecoder()
-                let response = try decoder.decode(JokeResponse.self, from: data)
-                
-                let joke = Joke()
-                joke.id_api = response.id // Сохраняем id из API
-                joke.createdAt = response.createdAt
-                joke.iconURL = response.iconURL
-                joke.jokeURL = response.jokeURL
-                joke.value = response.value
-                
-                // Создаем объекты Category и добавляем их в список категорий
-                if let categories = response.categories {
-                    let realm = try Realm()
-                    try realm.write {
-                        for categoryName in categories {
-                            let category = Category()
-                            category.name = categoryName
-                            realm.add(category, update: .modified)
-                            joke.categories.append(category)
-                        }
-                    }
+                let jokeResponse = try JSONDecoder().decode(JokeResponse.self, from: data)
+                DispatchQueue.main.async {
+                    completion(jokeResponse, nil)
                 }
-                
-                completion(joke, nil)
             } catch {
-                completion(nil, error)
+                DispatchQueue.main.async {
+                    completion(nil, error)
+                }
             }
         }.resume()
     }
 }
+
