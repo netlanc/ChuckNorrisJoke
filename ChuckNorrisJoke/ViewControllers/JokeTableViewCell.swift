@@ -97,7 +97,7 @@ class JokeTableViewCell: UITableViewCell {
         dateLabel.text = "Added: \(dateString)"
         
         // показываем категории у шуток в списке всех шуток
-        if isCategory {
+        if !isCategory {
             let categories = joke.categories.map { $0.name }.joined(separator: ", ")
             categoriesLabel.text = "Categories: \(categories)"
         }
